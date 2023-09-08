@@ -1,0 +1,374 @@
+---
+title: "Argentina a través de los puntos digitales: Percepciones de la democracia y la tecnología en 2023"
+author: "Fernanda López Franz"
+date: "2023-09-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#invoco bibliotecas
+
+```{r}
+library("ggplot2")
+library("cluster")
+library ("dplyr")
+```
+
+
+#cargo el dataset
+```{r}
+library(readxl)
+EncuestaPercepciones <- read_excel("data/EncuestaPercepciones.xlsx")
+```
+
+
+## *****************************************Dataset
+##ESTRUCTURA
+#visualizo dataset, primera impresión
+
+```{r}
+head(EncuestaPercepciones)
+```
+
+
+#dimensión 
+El dataset tiene 148 columnas y 2199 filas
+
+```{r}
+dim(EncuestaPercepciones)
+```
+
+Columnas
+```{r}
+ncol(EncuestaPercepciones)
+```
+
+Filas
+```{r}
+nrow(EncuestaPercepciones)
+```
+
+Atributos: 148 preguntas
+```{r}
+attributes(EncuestaPercepciones)
+```
+
+Nombres de las preguntas
+
+```{r}
+attr(EncuestaPercepciones,"names")
+```
+
+
+El data set es una tabla.
+
+```{r}
+attr(EncuestaPercepciones,"class")  
+
+```
+
+## *****************************************EDA & dataviz
+##DESCRIPCIÓN
+#columnas, nombres de variables
+
+Consulta: ¿esto podría sacarlo?
+```{r}
+names(EncuestaPercepciones)
+```
+
+
+#histograma, frecuencia
+La única variable numérica que tenemos, es la Edad. El histograma lo hacemos a partir de ese dato, para observar frecuencias. 
+
+```{r}
+hist(EncuestaPercepciones$Edad,
+     col="darkgreen",
+     main='Edad',
+     xlab='Edad',
+     ylab='Frequency')
+```
+
+#summarize del dataset, distribución, boxplot
+
+Resumen del dataset
+
+```{r}
+summary(EncuestaPercepciones)
+```
+
+#calculo medias
+
+Media por género. 
+
+```{r}
+EP_media <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$Género),
+                        mean) %>% 
+  print()
+```
+
+Media por provincia.
+
+```{r}
+EP_media_prov<- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$Provincia),
+                        mean) %>% 
+  print()
+```
+
+Media por educación: para las personas con primaria incompleta, el promedio de edad sube a 47 años. 
+
+```{r}
+EDU_edad <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$Educación),
+                        mean) %>% 
+  arrange(desc(x)) %>% 
+  print()
+```
+
+Promedio de edad y consideración de la tecnología como Derecho Humano: si bien no podemos observar varianzas significativas entre las diferentes edades, podemos observar el el promedio de edad desciende entre quienes consideran la tecnología como derecho humano. 
+
+
+```{r}
+EP_media <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$La_tecnología_es_un_DDHH),
+                        mean) %>% 
+  rename(Tecnología_como_DDHH=Group.1,Edad=x) %>% 
+  
+  print()
+```
+
+```{r}
+SensSitPais <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$SitPais),
+                        mean) %>% 
+  rename("Sensación ante situación del país"=Group.1,Edad=x) %>% 
+  print()
+```
+
+```{r}
+EP_media <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$ImpPol),
+                        mean) %>% 
+  print()
+```
+
+
+```{r}
+EP_media <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$ElecUtil),
+                        mean) %>% 
+  print()
+```
+
+```{r}
+EP_media <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$PartUtil),
+                        mean) %>% 
+  print()
+```
+
+Promedio de Edad según aplicaciones
+
+```{r}
+EP_media <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$FB),
+                        mean) %>% 
+  print()
+```
+
+
+```{r}
+EP_media <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$IG),
+                        mean) %>% 
+  print()
+```
+
+
+```{r}
+EP_media <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$YT),
+                        mean) %>% 
+  print()
+```
+
+
+```{r}
+EP_media <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$VC),
+                        mean) %>% 
+  print()
+```
+
+
+```{r}
+EP_media <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$TW),
+                        mean) %>% 
+  print()
+```
+
+
+```{r}
+EP_media <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$NoUsaApp),
+                        mean) %>% 
+  print()
+```
+```{r}
+EP_media <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$Whatsapp),
+                        mean) %>% 
+  print()
+```
+
+
+#boxplots comparados =)
+
+
+boxplot(EncuestaPercepciones$Edad ~ EncuestaPercepciones$PrefDemoc,    
+        col = 1:3)
+points(x = 1:nrow(Edad),
+       y = PrefDemoc$x,
+       pch = 16,
+       col = "white")
+text(x = 1:nrow(EncuestaPercepciones_means),
+     y = EncuestaPercepciones_means$x + 1.2,
+     labels = round(EncuestaPercepciones_means$x, 2),
+     col = "white")
+
+
+boxplot(EncuestaPercepciones$Edad ~ EncuestaPercepciones$Satis,    
+        col = 1:3)
+points(x = 1:nrow(EncuestaPercepciones_means),
+       y = EncuestaPercepciones_means$x,
+       pch = 16,
+       col = "white")
+text(x = 1:nrow(EncuestaPercepciones_means),
+     y = EncuestaPercepciones_means$x + 1.2,
+     labels = round(EncuestaPercepciones_means$x, 2),
+     col = "white")
+```
+
+
+
+#boxplots con ggplot
+#detalles en: https://www.datanovia.com/en/blog/ggplot-aes-how-to-assign-aesthetics-in-ggplot2/
+ggplot(iris,                                  
+       aes(x = Species,
+           y = Sepal.Length,
+           fill = Species)) +
+  geom_boxplot() +
+  stat_summary(fun = mean,
+               col = "white",
+               geom = "point") +
+  stat_summary(fun = mean,
+               col = "white",
+               geom = "text",
+               vjust = - 1,
+               aes(label = round(..y.., digits = 2)))
+
+#scatterplot 
+plot(iris$Sepal.Width, iris$Sepal.Length,
+     col='steelblue',
+     main='Scatterplot',
+     xlab='Sépalo (A)',
+     ylab='Sépalo (L)',
+     pch=19)
+
+## ****************************************Clustering con K-Means
+## Dar un parámetro K: # de centroides
+## Cómo lo calculo?
+
+# el gráfico de dispersión puede ayudar a 
+# identificar grupos y relaciones
+
+```{r}
+
+ggplot(EncuestaPercepciones, aes(Edad, 
+                 Satis)
+       ) + geom_point(size=4)
+```
+
+ggplot(iris, aes(Petal.Length, 
+                 Petal.Width)
+       ) + geom_point(size=4)
+
+# con tonos según especie
+ggplot(iris, aes(Petal.Length, 
+               Petal.Width)
+       ) + geom_point(aes(col=Species), size=4)
+
+# SETOSA se agrupará más fácilmente
+# (también se diferencia más facilmente)
+# VERSICOLOR y VIRGICA, similares? unidas? las mismas?
+
+# K-Means ya está incluido
+# fijo una semilla
+set.seed(999)
+
+# modelo con un k=2
+irisCluster2 <- kmeans(iris[,1:4], center=2, iter.max=10, nstart=20)
+irisCluster2
+
+# modelo con un k=3
+irisCluster3 <- kmeans(iris[,1:4], center=3, nstart=20)
+irisCluster3
+
+# modelo con un k=5
+irisCluster5 <- kmeans(iris[,1:4], center=5, nstart=20)
+irisCluster5
+
+# el modelo arroja lo siguiente por default:
+
+## CLUSTER MEANS:
+# los puntos optimizados (medias) de cada cluster estimado
+# en torno a los cuales se agruparán los casos (las clases)
+
+## CLUSTERING VECTOR:
+# es el vector resultante (estimaciones o etiquetas predichas)
+
+# SUMAS de diferencias cuadradas dentro (within), por cluster: 
+# Suerte de variabilidad explicada/capturada
+
+# lista de componentes calculados a consultar:
+#VER: https://cran.r-project.org/web/packages/healthyR/vignettes/kmeans-umap.html
+
+
+
+## *****************************************Comparar resultados
+# K=2
+# Comparo 1 vector predicho y las etiquetas originales
+table(irisCluster2$cluster, iris$Species)
+clusplot(iris, irisCluster2$cluster, color=T, shade=T, labels=0, lines=0)
+
+# K=3
+# Comparo 1 vector predicho y las etiquetas originales
+table(irisCluster3$cluster, iris$Species)
+clusplot(iris, irisCluster3$cluster, color=T, shade=T, labels=0, lines=0)
+
+# K=5
+# Comparo 1 vector predicho y las etiquetas originales
+table(irisCluster5$cluster, iris$Species)
+clusplot(iris, irisCluster5$cluster, color=T, shade=T, labels=0, lines=0)
+
+"Qué observamos de cada especie?
+ Todas están explicadas por igual?
+ Cómo vemos los aciertos?"
+
+## *****************************************Evaluar resultados
+### Método (gráfico) del codo
+
+# genero un bucle para iterar posibles K
+tot.withinss <- vector(mode="character", length=10)
+for (i in 1:15){
+  irisCluster <- kmeans(iris[,1:4], center=i, nstart=20)
+  tot.withinss[i] <- irisCluster$tot.withinss
+}
+
+# ploteo resultados para evaluar el K óptimo
+plot(1:15, tot.withinss, type="b", pch=19)
