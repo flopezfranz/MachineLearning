@@ -8,6 +8,28 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+##INTRODUCCIÓN
+Entre febrero y marzo del año 2023, se realizó la **Encuesta Percepciones sobre Democracia y Tecnología en Argentina**. El objetivo consistió en conocer las percepciones sobre la democracia y las tecnologías de la información y la comunicación de los y las argentinas que acceden a la red de puntos digitales del Programa Punto Digital.Se realizaron encuestas a todos los Puntos Digitales de todas las provincas argentinas y el número de respuestas varía de acuerdo al número de Puntos Digitales instalados en cada jurisdicción.Se obtuvieron respuestas en 270 Puntos Digitales.
+
+Los **Puntos Digitales** son dispositivos de inclusión digital libres y gratuitos instalados en todas las provincias argentinas y dependientes de la Secretaría de Innovación Pública perteneciente a la Jefatura de Gabinete de Ministros.
+
+Este trabajo es una primera aproximación a la lectura de los datos relevados por la Encuesta, y que esperamos puedan seguir analizándose en el marco del trabajo en el Programa Punto Digital. Los mayores avances que pudimos realizar, se refieren a la presentación de los datos recabados, y la presentación de variables seleccionadas: 
+
+**Caracterización de la muestra:**
+Provincia de Residencia
+Rango Etario
+Género
+Nivel Educativo
+
+**Variables seleccionadas para trabajar:**
+Preferencia por el sistema democrático sobre otras formas de gobierno
+Satisfacción con el funcionamiento de la democracia
+Importancia asignada a la política
+Concurrencia a votar
+Valoración de utilidad de las elecciones
+Valoración de utilidad de la participación
+Consideración de la tecnología como DDHH
+Importancia asignada a la tecnología para el fortalecimiento democrático
 
 #invoco bibliotecas
 
@@ -15,6 +37,12 @@ knitr::opts_chunk$set(echo = TRUE)
 library("ggplot2")
 library("cluster")
 library ("dplyr")
+library(readxl)
+library(RColorBrewer)
+library(ggthemes)
+library(hrbrthemes)
+library(plotly)
+library(gt)
 ```
 
 
@@ -30,12 +58,12 @@ EncuestaPercepciones <- read_excel("data/EncuestaPercepciones.xlsx")
 #visualizo dataset, primera impresión
 
 ```{r}
-head(EncuestaPercepciones)
+head(EncuestaPercepciones) 
 ```
 
 
 #dimensión 
-El dataset tiene 148 columnas y 2199 filas
+El dataset con el que vamos a trabajar tiene 23 columnas y 2199 filas
 
 ```{r}
 dim(EncuestaPercepciones)
@@ -49,11 +77,6 @@ ncol(EncuestaPercepciones)
 Filas
 ```{r}
 nrow(EncuestaPercepciones)
-```
-
-Atributos: 148 preguntas
-```{r}
-attributes(EncuestaPercepciones)
 ```
 
 Nombres de las preguntas
@@ -72,16 +95,14 @@ attr(EncuestaPercepciones,"class")
 
 ## *****************************************EDA & dataviz
 ##DESCRIPCIÓN
-#columnas, nombres de variables
-
-Consulta: ¿esto podría sacarlo?
-```{r}
-names(EncuestaPercepciones)
-```
 
 
 #histograma, frecuencia
-La única variable numérica que tenemos, es la Edad. El histograma lo hacemos a partir de ese dato, para observar frecuencias. 
+A continuación presentamos las principales características de la muestra.
+
+**EDAD**
+
+La mayoría de las personas encuestadas tiene entre 16 y 36 años. 
 
 ```{r}
 hist(EncuestaPercepciones$Edad,
@@ -91,9 +112,112 @@ hist(EncuestaPercepciones$Edad,
      ylab='Frequency')
 ```
 
+
+**PROVINCIA DE RESIDENCIA**
+
+Sobre el lugar de residencia de las personas que contestaron la encuesta, podemos decir que alrededor del 25% de las personas encuestadas participa de los Puntos Digitales instalados en la provincia de Buenos Aires, seguidos por las provincias de Córdoba y Entre Ríos. 
+La variación en la cantidad de las respuestas se debe a varios factores. En primer lugar, al número de Puntos Digitales instalados en cada jurisdicción.En segundo término, al nivel de respuesta que los Equipos Locales de trabajo tienen con el Equipo Nacional al momento de cumplir con los requerimientos del Programa (en este caso, llevar adelante la encuesta).
+
+```{r}
+EncuestaPercepciones %>%
+  ggplot(aes(Provincia,fill=Provincia))+
+  geom_bar()+
+   labs(title="Cantidad de respuestas por provincia",
+       subtitle = "Fuente: Encuesta de Percepciones sobre la Democracia y TIC",
+       y="Total de respuestas",
+       x="Provincia") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+   scale_x_discrete(labels=c("BA","CA","CH","CT","CABA","CB","CR","ER","FO","JY","LP","LR","MZ","MI","NQN","RN","SA","SJ","SL","SC","SF","SE","TF","TU"))+
+  scale_y_discrete(expand=c(0,1))+
+  scale_y_continuous(breaks = seq(0,800,50))+
+  scale_fill_viridis_d()+
+  theme(legend.position = "bottom")+
+   geom_text(aes(label = ..count..), stat = "count", vjust = -0.4,size=3)
+```
+
+**GÉNERO**
+
+En cuanto al género, utilizamos el criterio implementado en el último Censo Nacional para establecer las categorías.  El 62% de las encuestadas se identifica como mujer, el 36% como varón, el 1% prefiere no especificar, el 0.3% se identifica como mujer trans, el 0.11% como travesti y el 0.03% como varón trans. 
+
+
+```{r}
+Género <- EncuestaPercepciones %>% 
+  count(Género, name = "Total") %>% 
+  mutate(Porcentaje = (Total / sum(Total)) * 100) %>% 
+  arrange(desc(Porcentaje)) 
+
+
+Género |>
+  gt() %>% 
+  tab_header(title = md("**Distribución de respuestas por género**")) %>% 
+    fmt_number("Porcentaje",decimals=2) %>% 
+   tab_source_note(source_note = "Fuente: Encuesta sobre percepciones sobre la Democracia y Tecnologías (2023)")
+
+```
+
+
+  
+**NIVEL EDUCATIVO**
+
+El 29,48% de los y las encuestados/as tiene la secundaria completa. Al mismo tiempo, si a este porcentaje le sumamos aquellas personas que dicen tener algún tipo de estudio superior, el total asciende al 79,95%. Esto implica que la gran mayoría de quienes respondieron la encuesta tiene al menos estudios secundarios completos. 
+
+```{r}
+Nivel_Educativo <- table(EncPer$Educación)
+Nivel_Educativo <- data.frame(valores = names(Nivel_Educativo), frecuencia = as.vector(Nivel_Educativo)) %>% 
+arrange(desc(frecuencia)) %>% 
+mutate(porcentaje = (frecuencia/ sum(frecuencia)) * 100) 
+  
+  Nivel_Educativo %>% 
+  gt() %>% 
+  tab_header(title = md("**Respuestas por nivel educativo**")) %>% 
+    fmt_number("porcentaje",decimals=2) %>% 
+   tab_source_note(source_note = "Fuente: Encuesta sobre percepciones sobre la Democracia y Tecnologías (2023)") %>% 
+  cols_label(
+    valores = "Nivel Educativo",
+    frecuencia = "Frecuencia",
+    porcentaje = "Porcentaje"
+  )
+```
+
+
+```{r}
+Sum_Edu<-EncuestaPercepciones %>% 
+  count(Educación,name="Total") %>% 
+  arrange(desc(Total))
+
+Sum_Edu %>% 
+  ggplot(aes(Educación,Total))+
+  geom_col()+
+   labs(title="Nivel Educativo",
+       subtitle = "Fuente: Encuesta de Percepciones sobre la Democracia y TIC",
+       y="Total de respuestas",
+       x="Nivel Educativo") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+**EMPLEO**
+
+Casi el 80 % de la población encuestada trabaja.
+
+```{r}
+EncuestaPercepciones %>% 
+  count(Trabaja, name = "Total") %>% 
+  ggplot(aes(Trabaja, Total, fill = Trabaja)) +
+  geom_col() +
+  scale_fill_brewer(palette = "Accent", name = "Encuestadxs según trabajo") +
+  labs(
+    title = "Encuestadxs según empleo",
+    subtitle = "Fuente: Encuesta de Percepciones sobre la Democracia y TIC",
+    y = "Total de respuestas",
+    x = "Trabaja"
+  )
+```
+
+
+
 #summarize del dataset, distribución, boxplot
 
-Resumen del dataset
+**Resumen del dataset**
 
 ```{r}
 summary(EncuestaPercepciones)
@@ -101,35 +225,113 @@ summary(EncuestaPercepciones)
 
 #calculo medias
 
-Media por género. 
+**MEDIA de EDAD por GÉNERO**
+
 
 ```{r}
-EP_media <- aggregate(EncuestaPercepciones$Edad,    
+EDAD_media <- aggregate(EncuestaPercepciones$Edad,    
                         list(EncuestaPercepciones$Género),
                         mean) %>% 
+  rename("Género"=Group.1,"Promedio Edad"=x) %>% 
   print()
 ```
 
-Media por provincia.
 
 ```{r}
-EP_media_prov<- aggregate(EncuestaPercepciones$Edad,    
-                        list(EncuestaPercepciones$Provincia),
-                        mean) %>% 
-  print()
+ggplot(EncuestaPercepciones,                                  
+       aes(x = Género,
+           y = Edad,
+           fill = Género)) +
+  geom_boxplot() +
+  stat_summary(fun = mean,
+               col = "white",
+               geom = "point") +
+  stat_summary(fun = mean,
+               col = "white",
+               geom = "text",
+               vjust = - 1,
+               aes(label = round(..y.., digits = 2)))+
+  scale_fill_viridis_d()+
+  theme(legend.position = "bottom")
 ```
 
-Media por educación: para las personas con primaria incompleta, el promedio de edad sube a 47 años. 
+
+**MEDIA de EDAD por NIVEL EDUCATIVO**
+
+Para las personas con primaria incompleta, el promedio de edad sube a 47 años. 
 
 ```{r}
 EDU_edad <- aggregate(EncuestaPercepciones$Edad,    
                         list(EncuestaPercepciones$Educación),
                         mean) %>% 
   arrange(desc(x)) %>% 
+  rename("Nivel Educativo"=Group.1,"Promedio Edad"=x) %>% 
   print()
+
 ```
 
-Promedio de edad y consideración de la tecnología como Derecho Humano: si bien no podemos observar varianzas significativas entre las diferentes edades, podemos observar el el promedio de edad desciende entre quienes consideran la tecnología como derecho humano. 
+
+##Primeras observaciones sobre las variables
+
+Como primera aproximación nos preguntaremos sobre la interacción de las variables que describen a la muestra (edad, género, nivel educativo) con el comportamiento de variables incluidas en el cuestionario:
+
+**Promedio de Edad en relación a la preferencia de la democracia sobre otras formas de gobierno**
+
+La mayoría de las personas prefiere a la democracia sobre otro sistema de gobierno
+
+```{r}
+ggplot(EncuestaPercepciones, aes(PrefDemoc)) +
+  geom_bar() +
+  scale_x_discrete(drop = FALSE)
+ 
+
+```
+Por otra parte, si bien no se registran variaciones significativas, el promedio de edad aumenta entre quienes prefieren el sistema democrático sobre otras formas de Gobierno. 
+
+```{r}
+Pref_Democ_s_Edad <- aggregate(EncuestaPercepciones$Edad,    
+                        list(EncuestaPercepciones$PrefDemoc),
+                        mean) %>% 
+rename("Prefiere a la Democracia sobre otra forma de gobierno"=Group.1,"Promedio de Edad"=x) %>% 
+  print()
+
+```
+
+```{r}
+boxplot(EncuestaPercepciones$Edad ~ EncuestaPercepciones$PrefDemoc,    
+        col = 1:3)
+points(x = 1:nrow(Edad),
+       y = PrefDemoc$x,
+       pch = 16,
+       col = "white")
+text(x = 1:nrow(EncuestaPercepciones_means),
+     y = EncuestaPercepciones_means$x + 1.2,
+     labels = round(EncuestaPercepciones_means$x, 2),
+     col = "white")
+```
+**SATISFACCIÓN CON LA DEMOCRACIA**
+
+El 50,9% manifiesta estar de algún modo satisfecho con el funcionamiento de la democracia. 
+El 15,8% dice no estarlo. Asimismo, el 33,3% expresa un bajo grado de satisfacción.
+
+
+```{r}
+ggplot(EncuestaPercepciones,aes(Satis,fill=Satis))+
+  geom_bar()+
+  labs(
+    title = "Satisfacción con la Democracia",
+    subtitle = "Fuente: Encuesta de Percepciones sobre la Democracia y TIC",
+    x="Satisfacción con la democracia",
+    y="Número de respuestas")
+
+```
+
+
+
+
+**LA TECONOLOGÍA COMO DERECHO HUMANO**
+
+si bien no podemos observar varianzas significativas entre las diferentes edades, podemos observar que el promedio de edad desciende entre quienes consideran la tecnología como derecho humano. 
 
 
 ```{r}
@@ -228,8 +430,7 @@ EP_media <- aggregate(EncuestaPercepciones$Edad,
 
 
 #boxplots comparados =)
-
-
+```{r}
 boxplot(EncuestaPercepciones$Edad ~ EncuestaPercepciones$PrefDemoc,    
         col = 1:3)
 points(x = 1:nrow(Edad),
@@ -240,6 +441,13 @@ text(x = 1:nrow(EncuestaPercepciones_means),
      y = EncuestaPercepciones_means$x + 1.2,
      labels = round(EncuestaPercepciones_means$x, 2),
      col = "white")
+```
+
+
+```{r}
+
+```
+
 
 
 boxplot(EncuestaPercepciones$Edad ~ EncuestaPercepciones$Satis,    
@@ -306,6 +514,8 @@ ggplot(iris, aes(Petal.Length,
 # SETOSA se agrupará más fácilmente
 # (también se diferencia más facilmente)
 # VERSICOLOR y VIRGICA, similares? unidas? las mismas?
+
+
 
 # K-Means ya está incluido
 # fijo una semilla
