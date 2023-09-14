@@ -43,6 +43,7 @@ library(ggthemes)
 library(hrbrthemes)
 library(plotly)
 library(gt)
+theme_set(theme_bw())
 ```
 
 
@@ -309,6 +310,14 @@ text(x = 1:nrow(EncuestaPercepciones_means),
      labels = round(EncuestaPercepciones_means$x, 2),
      col = "white")
 ```
+
+```{r}
+ggplot(EncuestaPercepciones, aes(x = Edad, fill = PrefDemoc)) +
+  geom_histogram(position="dodge")
+```
+
+
+
 **SATISFACCIÓN CON LA DEMOCRACIA**
 
 El 50,9% manifiesta estar de algún modo satisfecho con el funcionamiento de la democracia. 
@@ -326,10 +335,57 @@ ggplot(EncuestaPercepciones,aes(Satis,fill=Satis))+
 
 ```
 
+**PERCEPCIONES SOBRE EL ESTADO DE LAS INSTITUCIONES**
 
 
+```{r}
+ggplot(EncuestaPercepciones,aes(EstadoInstDemoc,fill=EstadoInstDemoc))+
+  geom_bar()+
+  labs(
+    title = "Consideración sobre el Estado de las Instituciones Democráticas",
+    subtitle = "Fuente: Encuesta de Percepciones sobre la Democracia y TIC",
+    x="Satisfacción con la democracia",
+    y="Número de respuestas")
+```
+
+**IMPORTANCIA DE LA POLÍTICA COMO SOLUCIÓN PARA LA VIDA DE LAS PERSONAS**
+
+```{r}
+ggplot(EncuestaPercepciones,aes(ImpPol,fill=ImpPol))+
+  geom_bar()+
+  labs(
+    title = "Importancia de la política",
+    subtitle = "Fuente: Encuesta de Percepciones sobre la Democracia y TIC",
+    x="Cuán importante es la política",
+    y="Número de respuestas")
+```
+
+**CONCURRENCIA A VOTAR**
+
+
+```{r}
+ggplot(EncuestaPercepciones,aes(Voto,fill=Voto))+
+  geom_bar()+
+  labs(
+    title = "Concurrencia a votar",
+    subtitle = "Fuente: Encuesta de Percepciones sobre la Democracia y TIC",
+    x="Cuando hay elecciones, ¿vas a votar?",
+    y="Número de respuestas")
+```
 
 **LA TECONOLOGÍA COMO DERECHO HUMANO**
+
+Se registra un extendido acuerdo sobre que el acceso a las Tecnologías es un Derecho Humano: el 95,1% de lxs encuestados respondió que Sí. 
+
+```{r}
+EncuestaPercepciones %>% 
+  filter(!is.na(La_tecnología_es_un_DDHH)) %>% 
+  ggplot(aes(La_tecnología_es_un_DDHH,fill=La_tecnología_es_un_DDHH))+
+  geom_bar()+
+  scale_fill_brewer(palette="Accent",name="La tecnología es un Derecho Humano")+
+  labs(title = "La tecnología como Derecho Humano", x = "¿Considerás que el acceso a las TIC es un DDHH?",subtitle="Fuente: Encuesta de Percepciones sobre la Democracia y TIC") +
+  geom_text(aes(label = ..count..), stat = "count", vjust = 1,size=4,color="white")
+```
 
 si bien no podemos observar varianzas significativas entre las diferentes edades, podemos observar que el promedio de edad desciende entre quienes consideran la tecnología como derecho humano. 
 
@@ -343,93 +399,23 @@ EP_media <- aggregate(EncuestaPercepciones$Edad,
   print()
 ```
 
-```{r}
-SensSitPais <- aggregate(EncuestaPercepciones$Edad,    
-                        list(EncuestaPercepciones$SitPais),
-                        mean) %>% 
-  rename("Sensación ante situación del país"=Group.1,Edad=x) %>% 
-  print()
-```
+**IMPORTANCIA DE LA TECNOLOGÍA PARA EL FORTALECIMIENTO DEMOCRÁTICO**
+En paralelo vemos una alta ponderación de las mismas como instrumento capaz de aportar al fortalecimiento de la democracia (91,6%)
 
 ```{r}
-EP_media <- aggregate(EncuestaPercepciones$Edad,    
-                        list(EncuestaPercepciones$ImpPol),
-                        mean) %>% 
-  print()
+ggplot(EncuestaPercepciones,aes(Imp_tecno_fortalecimiento_democ,fill=Imp_tecno_fortalecimiento_democ))+
+  geom_bar()+
+  labs(
+    title = "Importancia de la tecnología para el fortalecimiento democrático",
+    subtitle = "Fuente: Encuesta de Percepciones sobre la Democracia y TIC",
+    x="¿Qué tan importantes son las tecnologías para el fortalecimiento democrático?",
+    y="Número de respuestas")
 ```
 
-
-```{r}
-EP_media <- aggregate(EncuestaPercepciones$Edad,    
-                        list(EncuestaPercepciones$ElecUtil),
-                        mean) %>% 
-  print()
-```
-
-```{r}
-EP_media <- aggregate(EncuestaPercepciones$Edad,    
-                        list(EncuestaPercepciones$PartUtil),
-                        mean) %>% 
-  print()
-```
-
-Promedio de Edad según aplicaciones
-
-```{r}
-EP_media <- aggregate(EncuestaPercepciones$Edad,    
-                        list(EncuestaPercepciones$FB),
-                        mean) %>% 
-  print()
-```
-
-
-```{r}
-EP_media <- aggregate(EncuestaPercepciones$Edad,    
-                        list(EncuestaPercepciones$IG),
-                        mean) %>% 
-  print()
-```
-
-
-```{r}
-EP_media <- aggregate(EncuestaPercepciones$Edad,    
-                        list(EncuestaPercepciones$YT),
-                        mean) %>% 
-  print()
-```
-
-
-```{r}
-EP_media <- aggregate(EncuestaPercepciones$Edad,    
-                        list(EncuestaPercepciones$VC),
-                        mean) %>% 
-  print()
-```
-
-
-```{r}
-EP_media <- aggregate(EncuestaPercepciones$Edad,    
-                        list(EncuestaPercepciones$TW),
-                        mean) %>% 
-  print()
-```
-
-
-```{r}
-EP_media <- aggregate(EncuestaPercepciones$Edad,    
-                        list(EncuestaPercepciones$NoUsaApp),
-                        mean) %>% 
-  print()
-```
-```{r}
-EP_media <- aggregate(EncuestaPercepciones$Edad,    
-                        list(EncuestaPercepciones$Whatsapp),
-                        mean) %>% 
-  print()
-```
-
+##Algunas interacciones
 
 #boxplots comparados =)
+
 ```{r}
 boxplot(EncuestaPercepciones$Edad ~ EncuestaPercepciones$PrefDemoc,    
         col = 1:3)
@@ -446,10 +432,6 @@ text(x = 1:nrow(EncuestaPercepciones_means),
 
 ```{r}
 
-```
-
-
-
 boxplot(EncuestaPercepciones$Edad ~ EncuestaPercepciones$Satis,    
         col = 1:3)
 points(x = 1:nrow(EncuestaPercepciones_means),
@@ -463,31 +445,6 @@ text(x = 1:nrow(EncuestaPercepciones_means),
 ```
 
 
-
-#boxplots con ggplot
-#detalles en: https://www.datanovia.com/en/blog/ggplot-aes-how-to-assign-aesthetics-in-ggplot2/
-ggplot(iris,                                  
-       aes(x = Species,
-           y = Sepal.Length,
-           fill = Species)) +
-  geom_boxplot() +
-  stat_summary(fun = mean,
-               col = "white",
-               geom = "point") +
-  stat_summary(fun = mean,
-               col = "white",
-               geom = "text",
-               vjust = - 1,
-               aes(label = round(..y.., digits = 2)))
-
-#scatterplot 
-plot(iris$Sepal.Width, iris$Sepal.Length,
-     col='steelblue',
-     main='Scatterplot',
-     xlab='Sépalo (A)',
-     ylab='Sépalo (L)',
-     pch=19)
-
 ## ****************************************Clustering con K-Means
 ## Dar un parámetro K: # de centroides
 ## Cómo lo calculo?
@@ -496,10 +453,10 @@ plot(iris$Sepal.Width, iris$Sepal.Length,
 # identificar grupos y relaciones
 
 ```{r}
-
-ggplot(EncuestaPercepciones, aes(Edad, 
-                 Satis)
-       ) + geom_point(size=4)
+EncuestaPercepciones %>%
+  filter(!is.na(Voto)) %>%
+  ggplot(aes(Edad, Voto, fill = Voto)) +
+  geom_violin()
 ```
 
 ggplot(iris, aes(Petal.Length, 
