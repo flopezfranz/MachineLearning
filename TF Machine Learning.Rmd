@@ -43,7 +43,7 @@ library(ggthemes)
 library(hrbrthemes)
 library(plotly)
 library(gt)
-theme_set(theme_bw())
+
 ```
 
 
@@ -64,7 +64,7 @@ head(EncuestaPercepciones)
 
 
 #dimensión 
-El dataset con el que vamos a trabajar tiene 23 columnas y 2199 filas
+El dataset con el que vamos a trabajar tiene 12 columnas y 2199 filas
 
 ```{r}
 dim(EncuestaPercepciones)
@@ -110,7 +110,8 @@ hist(EncuestaPercepciones$Edad,
      col="darkgreen",
      main='Edad',
      xlab='Edad',
-     ylab='Frequency')
+     ylab='Frequency') 
+
 ```
 
 
@@ -163,7 +164,7 @@ Género |>
 El 29,48% de los y las encuestados/as tiene la secundaria completa. Al mismo tiempo, si a este porcentaje le sumamos aquellas personas que dicen tener algún tipo de estudio superior, el total asciende al 79,95%. Esto implica que la gran mayoría de quienes respondieron la encuesta tiene al menos estudios secundarios completos. 
 
 ```{r}
-Nivel_Educativo <- table(EncPer$Educación)
+Nivel_Educativo <- table(EncuestaPercepciones$Educación)
 Nivel_Educativo <- data.frame(valores = names(Nivel_Educativo), frecuencia = as.vector(Nivel_Educativo)) %>% 
 arrange(desc(frecuencia)) %>% 
 mutate(porcentaje = (frecuencia/ sum(frecuencia)) * 100) 
@@ -205,7 +206,6 @@ EncuestaPercepciones %>%
   count(Trabaja, name = "Total") %>% 
   ggplot(aes(Trabaja, Total, fill = Trabaja)) +
   geom_col() +
-  scale_fill_brewer(palette = "Accent", name = "Encuestadxs según trabajo") +
   labs(
     title = "Encuestadxs según empleo",
     subtitle = "Fuente: Encuesta de Percepciones sobre la Democracia y TIC",
@@ -227,7 +227,13 @@ summary(EncuestaPercepciones)
 #calculo medias
 
 **MEDIA de EDAD por GÉNERO**
-
+En el gráfico:
+0=Varón
+1=Mujer
+2=Varón Trans
+3=Mujer Trans
+4=Prefiero no decirlo
+5=No binario
 
 ```{r}
 EDAD_media <- aggregate(EncuestaPercepciones$Edad,    
@@ -239,10 +245,9 @@ EDAD_media <- aggregate(EncuestaPercepciones$Edad,
 
 
 ```{r}
-ggplot(EncuestaPercepciones,                                  
-       aes(x = Género,
-           y = Edad,
-           fill = Género)) +
+EncuestaPercepciones$Género <- factor(EncuestaPercepciones$Género)
+
+ggplot(EncuestaPercepciones, aes(x = Género, y = Edad, fill = Género, group = Género)) +
   geom_boxplot() +
   stat_summary(fun = mean,
                col = "white",
@@ -250,10 +255,10 @@ ggplot(EncuestaPercepciones,
   stat_summary(fun = mean,
                col = "white",
                geom = "text",
-               vjust = - 1,
-               aes(label = round(..y.., digits = 2)))+
-  scale_fill_viridis_d()+
+               vjust = -1,
+               aes(label = round(..y.., digits = 2))) +
   theme(legend.position = "bottom")
+
 ```
 
 
@@ -270,11 +275,27 @@ EDU_edad <- aggregate(EncuestaPercepciones$Edad,
   print()
 
 ```
+```{r}
+EncuestaPercepciones$Educación <- factor(EncuestaPercepciones$Educación)
+
+ggplot(EncuestaPercepciones, aes(x = Educación, y = Edad, fill = Educación, group = Educación)) +
+  geom_boxplot() +
+  stat_summary(fun = mean,
+               col = "white",
+               geom = "point") +
+  stat_summary(fun = mean,
+               col = "white",
+               geom = "text",
+               vjust = -1,
+               aes(label = round(..y.., digits = 2))) +
+  theme(legend.position = "bottom")
+```
 
 
 ##Primeras observaciones sobre las variables
 
-Como primera aproximación nos preguntaremos sobre la interacción de las variables que describen a la muestra (edad, género, nivel educativo) con el comportamiento de variables incluidas en el cuestionario:
+Como primera aproximación nos preguntaremos sobre la interacción de las variables que describen a la muestra (edad, género, nivel educativo) con el comportamiento de variables incluidas en el cuestionario. 
+Pasamos (en excel) la mayoría de las variables de descripción cualitativa, a números. 
 
 **Promedio de Edad en relación a la preferencia de la democracia sobre otras formas de gobierno**
 
@@ -288,6 +309,9 @@ ggplot(EncuestaPercepciones, aes(PrefDemoc)) +
 
 ```
 Por otra parte, si bien no se registran variaciones significativas, el promedio de edad aumenta entre quienes prefieren el sistema democrático sobre otras formas de Gobierno. 
+En el gráfico:
+0=No
+1=Si
 
 ```{r}
 Pref_Democ_s_Edad <- aggregate(EncuestaPercepciones$Edad,    
@@ -301,30 +325,36 @@ rename("Prefiere a la Democracia sobre otra forma de gobierno"=Group.1,"Promedio
 ```{r}
 boxplot(EncuestaPercepciones$Edad ~ EncuestaPercepciones$PrefDemoc,    
         col = 1:3)
-points(x = 1:nrow(Edad),
-       y = PrefDemoc$x,
+
+EncuestaPercepciones_means <- aggregate(Edad ~ PrefDemoc, data = EncuestaPercepciones, mean)
+
+points(x = 1:nrow(EncuestaPercepciones_means),
+       y = EncuestaPercepciones_means$Edad,
        pch = 16,
        col = "white")
+
 text(x = 1:nrow(EncuestaPercepciones_means),
-     y = EncuestaPercepciones_means$x + 1.2,
-     labels = round(EncuestaPercepciones_means$x, 2),
+     y = EncuestaPercepciones_means$Edad + 1.2,
+     labels = round(EncuestaPercepciones_means$Edad, 2),
      col = "white")
 ```
-
-```{r}
-ggplot(EncuestaPercepciones, aes(x = Edad, fill = PrefDemoc)) +
-  geom_histogram(position="dodge")
-```
-
-
 
 **SATISFACCIÓN CON LA DEMOCRACIA**
 
 El 50,9% manifiesta estar de algún modo satisfecho con el funcionamiento de la democracia. 
 El 15,8% dice no estarlo. Asimismo, el 33,3% expresa un bajo grado de satisfacción.
 
+En el gráfico:
+0= Muy Insatisfecho
+1= Insatisfecho
+2= Poco Satisfecho
+3= Satisfecho
+4= Muy Satisfecho
+
 
 ```{r}
+EncuestaPercepciones$Satis <- as.factor(EncuestaPercepciones$Satis)
+
 ggplot(EncuestaPercepciones,aes(Satis,fill=Satis))+
   geom_bar()+
   labs(
@@ -336,21 +366,41 @@ ggplot(EncuestaPercepciones,aes(Satis,fill=Satis))+
 ```
 
 **PERCEPCIONES SOBRE EL ESTADO DE LAS INSTITUCIONES**
+La mitad de las personas consideran que las instituciones democráticas en la Argentina son frágiles o muy frágiles (50,2%).
+
+En el gráfico:
+0= No sabe o no contesta
+1= Muy frágiles
+2= Frágiles
+3= Sólidas
+4= Muy sólidas
 
 
 ```{r}
+EncuestaPercepciones$EstadoInstDemoc <- as.factor(EncuestaPercepciones$EstadoInstDemoc)
+
+
 ggplot(EncuestaPercepciones,aes(EstadoInstDemoc,fill=EstadoInstDemoc))+
   geom_bar()+
   labs(
     title = "Consideración sobre el Estado de las Instituciones Democráticas",
     subtitle = "Fuente: Encuesta de Percepciones sobre la Democracia y TIC",
-    x="Satisfacción con la democracia",
+    x="Percepción sobre las instituciones",
     y="Número de respuestas")
 ```
 
 **IMPORTANCIA DE LA POLÍTICA COMO SOLUCIÓN PARA LA VIDA DE LAS PERSONAS**
+La gran mayoría considera que la política es importante - 79,1%. 
+En el gráfico:
+0=Nada Importante
+1=Poco Importante
+2=Importante
+3=Muy importante
 
 ```{r}
+
+EncuestaPercepciones$ImpPol<-as.factor(EncuestaPercepciones$ImpPol)
+
 ggplot(EncuestaPercepciones,aes(ImpPol,fill=ImpPol))+
   geom_bar()+
   labs(
@@ -361,9 +411,15 @@ ggplot(EncuestaPercepciones,aes(ImpPol,fill=ImpPol))+
 ```
 
 **CONCURRENCIA A VOTAR**
-
+Sobre la pregunta acerca de si cuando hay elecciones, se presentan a votar, la mayoría de las personas manifestó que siempre vota.
+En el gráfico:
+0=Nunca voto
+1=A veces voto
+2=Siempre voto
 
 ```{r}
+EncuestaPercepciones$Voto<-as.factor(EncuestaPercepciones$Voto)
+
 ggplot(EncuestaPercepciones,aes(Voto,fill=Voto))+
   geom_bar()+
   labs(
@@ -377,7 +433,13 @@ ggplot(EncuestaPercepciones,aes(Voto,fill=Voto))+
 
 Se registra un extendido acuerdo sobre que el acceso a las Tecnologías es un Derecho Humano: el 95,1% de lxs encuestados respondió que Sí. 
 
+En el gráfico:
+0=No
+1=Si
+
 ```{r}
+EncuestaPercepciones$La_tecnología_es_un_DDHH<-as.factor(EncuestaPercepciones$La_tecnología_es_un_DDHH)
+
 EncuestaPercepciones %>% 
   filter(!is.na(La_tecnología_es_un_DDHH)) %>% 
   ggplot(aes(La_tecnología_es_un_DDHH,fill=La_tecnología_es_un_DDHH))+
@@ -401,8 +463,16 @@ EP_media <- aggregate(EncuestaPercepciones$Edad,
 
 **IMPORTANCIA DE LA TECNOLOGÍA PARA EL FORTALECIMIENTO DEMOCRÁTICO**
 En paralelo vemos una alta ponderación de las mismas como instrumento capaz de aportar al fortalecimiento de la democracia (91,6%)
+En el gráfico:
+0=Nada importante
+1=Poco importante
+2=Importante
+3=Muy Importante
 
 ```{r}
+
+EncuestaPercepciones$Imp_tecno_fortalecimiento_democ<-as.factor(EncuestaPercepciones$Imp_tecno_fortalecimiento_democ)
+
 ggplot(EncuestaPercepciones,aes(Imp_tecno_fortalecimiento_democ,fill=Imp_tecno_fortalecimiento_democ))+
   geom_bar()+
   labs(
@@ -410,38 +480,6 @@ ggplot(EncuestaPercepciones,aes(Imp_tecno_fortalecimiento_democ,fill=Imp_tecno_f
     subtitle = "Fuente: Encuesta de Percepciones sobre la Democracia y TIC",
     x="¿Qué tan importantes son las tecnologías para el fortalecimiento democrático?",
     y="Número de respuestas")
-```
-
-##Algunas interacciones
-
-#boxplots comparados =)
-
-```{r}
-boxplot(EncuestaPercepciones$Edad ~ EncuestaPercepciones$PrefDemoc,    
-        col = 1:3)
-points(x = 1:nrow(Edad),
-       y = PrefDemoc$x,
-       pch = 16,
-       col = "white")
-text(x = 1:nrow(EncuestaPercepciones_means),
-     y = EncuestaPercepciones_means$x + 1.2,
-     labels = round(EncuestaPercepciones_means$x, 2),
-     col = "white")
-```
-
-
-```{r}
-
-boxplot(EncuestaPercepciones$Edad ~ EncuestaPercepciones$Satis,    
-        col = 1:3)
-points(x = 1:nrow(EncuestaPercepciones_means),
-       y = EncuestaPercepciones_means$x,
-       pch = 16,
-       col = "white")
-text(x = 1:nrow(EncuestaPercepciones_means),
-     y = EncuestaPercepciones_means$x + 1.2,
-     labels = round(EncuestaPercepciones_means$x, 2),
-     col = "white")
 ```
 
 
@@ -453,42 +491,63 @@ text(x = 1:nrow(EncuestaPercepciones_means),
 # identificar grupos y relaciones
 
 ```{r}
+ggplot(EncuestaPercepciones, aes(x = ImpPol, y = Voto)) +
+  geom_point() +
+  labs(
+    title = "Gráfico de Dispersión",
+    x = "Importancia asignada a la política",
+    y = "Frecuencia del voto"
+  ) +
+  theme_minimal()
+```
+
+
+```{r}
 EncuestaPercepciones %>%
   filter(!is.na(Voto)) %>%
   ggplot(aes(Edad, Voto, fill = Voto)) +
   geom_violin()
 ```
 
-ggplot(iris, aes(Petal.Length, 
-                 Petal.Width)
-       ) + geom_point(size=4)
-
-# con tonos según especie
-ggplot(iris, aes(Petal.Length, 
-               Petal.Width)
-       ) + geom_point(aes(col=Species), size=4)
-
-# SETOSA se agrupará más fácilmente
-# (también se diferencia más facilmente)
-# VERSICOLOR y VIRGICA, similares? unidas? las mismas?
-
-
-
 # K-Means ya está incluido
 # fijo una semilla
+
+```{r}
 set.seed(999)
+```
+
 
 # modelo con un k=2
-irisCluster2 <- kmeans(iris[,1:4], center=2, iter.max=10, nstart=20)
+
+```{r}
+EncCluster2 <- kmeans(EncuestaPercepciones[9:10], center=2, iter.max=10, nstart=20)
+EncCluster2
+```
+
+
+
+EncCluster2 <- kmeans(EncuestaPercepciones[7:10], center=2, iter.max=10, nstart=20)
 irisCluster2
 
+
 # modelo con un k=3
-irisCluster3 <- kmeans(iris[,1:4], center=3, nstart=20)
-irisCluster3
+
+```{r}
+
+EncCluster3 <- kmeans(EncuestaPercepciones[,9:10], center=3, nstart=20)
+EncCluster3
+```
+
 
 # modelo con un k=5
-irisCluster5 <- kmeans(iris[,1:4], center=5, nstart=20)
-irisCluster5
+
+```{r}
+EncCluster5 <- kmeans(EncuestaPercepciones[,9:10], center=5, nstart=20)
+EncCluster5
+```
+
+EncCluster5 <- kmeans(EncuestaPercepciones[,1:2], center=5, nstart=20)
+EncCluster5
 
 # el modelo arroja lo siguiente por default:
 
@@ -513,15 +572,33 @@ irisCluster5
 table(irisCluster2$cluster, iris$Species)
 clusplot(iris, irisCluster2$cluster, color=T, shade=T, labels=0, lines=0)
 
+```{r}
+table(EncCluster2$cluster, EncuestaPercepciones$Edad)
+clusplot(EncuestaPercepciones, EncCluster2$cluster, color=T, shade=T, labels=0, lines=0)
+```
+
+
 # K=3
 # Comparo 1 vector predicho y las etiquetas originales
 table(irisCluster3$cluster, iris$Species)
 clusplot(iris, irisCluster3$cluster, color=T, shade=T, labels=0, lines=0)
 
+```{r}
+table(EncCluster3$cluster, EncuestaPercepciones$Edad)
+clusplot(EncuestaPercepciones, EncCluster3$cluster, color=T, shade=T, labels=0, lines=0)
+```
+
+
 # K=5
 # Comparo 1 vector predicho y las etiquetas originales
 table(irisCluster5$cluster, iris$Species)
 clusplot(iris, irisCluster5$cluster, color=T, shade=T, labels=0, lines=0)
+
+```{r}
+table(EncCluster5$cluster, EncuestaPercepciones$Edad)
+clusplot(EncuestaPercepciones, EncCluster5$cluster, color=T, shade=T, labels=0, lines=0)
+```
+
 
 "Qué observamos de cada especie?
  Todas están explicadas por igual?
@@ -537,5 +614,19 @@ for (i in 1:15){
   tot.withinss[i] <- irisCluster$tot.withinss
 }
 
+```{r}
+tot.withinss <- vector(mode="character", length=10)
+for (i in 1:15){
+  EncCluster <- kmeans(EncuestaPercepciones[,1:2], center=i, nstart=20)
+  tot.withinss[i] <- EncCluster$tot.withinss
+}
+```
+
+
 # ploteo resultados para evaluar el K óptimo
 plot(1:15, tot.withinss, type="b", pch=19)
+
+```{r}
+plot(1:15, tot.withinss, type="b", pch=19)
+```
+
